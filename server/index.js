@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 /* =========================
-   Helper: Async Wrapper
+   Helper
 ========================= */
 const asyncHandler = (fn) => (req, res, next) =>
   Promise.resolve(fn(req, res, next)).catch(next);
@@ -21,7 +21,6 @@ const asyncHandler = (fn) => (req, res, next) =>
 ========================= */
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
-
   if (!authHeader) {
     return res.status(401).json({ message: "No token provided" });
   }
@@ -64,7 +63,6 @@ app.post(
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
-
     if (existingUser) {
       return res.status(409).json({ message: "User already exists" });
     }
@@ -116,7 +114,7 @@ app.post(
 );
 
 /* =========================
-   Recruiter Job APIs (5.2)
+   Recruiter Job APIs
 ========================= */
 app.post(
   "/api/jobs",
@@ -175,7 +173,7 @@ app.get(
 );
 
 /* =========================
-   Candidate Apply to Job (5.3)
+   Candidate Apply to Job
 ========================= */
 app.post(
   "/api/jobs/:jobId/apply",
@@ -188,10 +186,7 @@ app.post(
       return res.status(400).json({ message: "Invalid job ID" });
     }
 
-    const job = await prisma.job.findUnique({
-      where: { id: jobId },
-    });
-
+    const job = await prisma.job.findUnique({ where: { id: jobId } });
     if (!job) {
       return res.status(404).json({ message: "Job not found" });
     }
@@ -216,6 +211,35 @@ app.post(
       }
       throw error;
     }
+  })
+);
+
+/* =========================
+   Recruiter View Applications (5.4)
+========================= */
+app.get(
+  "/api/recruiter/applications",
+  authenticateToken,
+  authorizeRoles("RECRUITER"),
+  asyncHandler(async (req, res) => {
+    const applications = await prisma.application.findMany({
+      where: {
+        job: {
+          recruiterId: req.user.id,
+        },
+      },
+      include: {
+        candidate: {
+          select: { id: true, name: true, email: true },
+        },
+        job: {
+          select: { id: true, title: true, location: true },
+        },
+      },
+      orderBy: { appliedAt: "desc" },
+    });
+
+    res.json({ applications });
   })
 );
 
