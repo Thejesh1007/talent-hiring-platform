@@ -21,5 +21,47 @@ model User {
   role      Role
   createdAt DateTime @default(now())
 
+  // Relations
+  jobsPosted   Job[]         @relation("RecruiterJobs")
+  applications Application[] @relation("CandidateApplications")
+
   @@map("users")
+}
+
+enum ApplicationStatus {
+  APPLIED
+  REVIEWED
+  REJECTED
+  HIRED
+}
+
+model Job {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  location    String
+  salary      Int
+  createdAt   DateTime @default(now())
+
+  recruiter   User @relation("RecruiterJobs", fields: [recruiterId], references: [id])
+  recruiterId Int
+
+  applications Application[]
+
+  @@map("jobs")
+}
+
+model Application {
+  id        Int               @id @default(autoincrement())
+  status    ApplicationStatus @default(APPLIED)
+  appliedAt DateTime          @default(now())
+
+  job   Job @relation(fields: [jobId], references: [id])
+  jobId Int
+
+  candidate   User @relation("CandidateApplications", fields: [candidateId], references: [id])
+  candidateId Int
+
+  @@unique([jobId, candidateId])
+  @@map("applications")
 }

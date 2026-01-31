@@ -1,31 +1,66 @@
 const express = require("express");
 const cors = require("cors");
 const bcrypt = require("bcrypt");
-require("dotenv").config();
 const jwt = require("jsonwebtoken");
+require("dotenv").config();
+
 const prisma = require("./prisma/client");
 
-
-
-
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-// TEMPORARY user storage (will move to DB later)
+/* =========================
+   Helper: Async Wrapper
+========================= */
+const asyncHandler = (fn) => (req, res, next) =>
+  Promise.resolve(fn(req, res, next)).catch(next);
 
-// SIGNUP ROUTE
-app.post("/api/signup", async (req, res) => {
-  try {
+/* =========================
+   Auth Middleware
+========================= */
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Invalid token format" });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(403).json({ message: "Invalid or expired token" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
+
+const authorizeRoles = (...roles) => {
+  return (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    next();
+  };
+};
+
+/* =========================
+   Auth Routes
+========================= */
+app.post(
+  "/api/signup",
+  asyncHandler(async (req, res) => {
     const { name, email, password, role } = req.body;
 
-    // 1. Validation
     if (!name || !email || !password || !role) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // 2. Check existing user
     const existingUser = await prisma.user.findUnique({
       where: { email },
     });
@@ -34,175 +69,171 @@ app.post("/api/signup", async (req, res) => {
       return res.status(409).json({ message: "User already exists" });
     }
 
-    // 3. Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 4. Create user
     const user = await prisma.user.create({
-      data: {
-        name,
-        email,
-        password: hashedPassword,
-        role,
-      },
+      data: { name, email, password: hashedPassword, role },
     });
 
-    // 5. Respond (never send password)
     res.status(201).json({
-      message: "User registered successfully",
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
+      message: "Signup successful",
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
-});
-
-
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-
-  // 1. Check header exists
-  if (!authHeader) {
-    return res.status(401).json({ message: "Access denied. No token provided." });
-  }
-
-  // 2. Extract token
-  const token = authHeader.split(" ")[1];
-  if (!token) {
-    return res.status(401).json({ message: "Access denied. Invalid token format." });
-  }
-
-  // 3. Verify token
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-    if (err) {
-      return res.status(403).json({ message: "Invalid or expired token." });
-    }
-
-    // 4. Attach user to request
-    req.user = decoded;
-    next();
-  });
-};
-
-
-const authorizeRoles = (...allowedRoles) => {
-  return (req, res, next) => {
-    // req.user is set by authenticateToken
-    if (!req.user || !req.user.role) {
-      return res.status(403).json({ message: "Access denied. Role missing." });
-    }
-
-    if (!allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ message: "Access denied. Insufficient permissions." });
-    }
-
-    next();
-  };
-};
-
-
-app.get("/api/protected", authenticateToken, (req, res) => {
-  res.json({
-    message: "Protected route accessed",
-    user: req.user,
-  });
-});
-
-app.get(
-  "/api/candidate",
-  authenticateToken,
-  authorizeRoles("CANDIDATE"),
-  (req, res) => {
-    res.json({ message: "Candidate access granted" });
-  }
+  })
 );
 
-
-app.get(
-  "/api/recruiter",
-  authenticateToken,
-  authorizeRoles("RECRUITER"),
-  (req, res) => {
-    res.json({ message: "Recruiter access granted" });
-  }
-);
-
-
-app.get(
-  "/api/admin",
-  authenticateToken,
-  authorizeRoles("ADMIN"),
-  (req, res) => {
-    res.json({ message: "Admin access granted" });
-  }
-);
-
-
-
-
-// Health check
-app.get("/api/health", (req, res) => {
-  res.json({ status: "Backend is running" });
-});
-
-
-// LOGIN ROUTE
-app.post("/api/login", async (req, res) => {
-  try {
+app.post(
+  "/api/login",
+  asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    // 1. Validate
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password required" });
     }
 
-    // 2. Find user
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-
+    const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 3. Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 4. Create JWT
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "1h" }
     );
 
-    // 5. Respond
     res.json({
       message: "Login successful",
       token,
-      user: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
+    });
+  })
+);
+
+/* =========================
+   Recruiter Job APIs (5.2)
+========================= */
+app.post(
+  "/api/jobs",
+  authenticateToken,
+  authorizeRoles("RECRUITER"),
+  asyncHandler(async (req, res) => {
+    const { title, description, location, salary } = req.body;
+
+    if (!title || !description || !location || !salary) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const job = await prisma.job.create({
+      data: {
+        title,
+        description,
+        location,
+        salary,
+        recruiterId: req.user.id,
       },
     });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
-  }
+
+    res.status(201).json({ message: "Job created", job });
+  })
+);
+
+app.get(
+  "/api/jobs/my",
+  authenticateToken,
+  authorizeRoles("RECRUITER"),
+  asyncHandler(async (req, res) => {
+    const jobs = await prisma.job.findMany({
+      where: { recruiterId: req.user.id },
+      orderBy: { createdAt: "desc" },
+    });
+
+    res.json({ jobs });
+  })
+);
+
+/* =========================
+   Public Jobs
+========================= */
+app.get(
+  "/api/jobs",
+  authenticateToken,
+  asyncHandler(async (req, res) => {
+    const jobs = await prisma.job.findMany({
+      include: {
+        recruiter: { select: { id: true, name: true } },
+      },
+    });
+
+    res.json({ jobs });
+  })
+);
+
+/* =========================
+   Candidate Apply to Job (5.3)
+========================= */
+app.post(
+  "/api/jobs/:jobId/apply",
+  authenticateToken,
+  authorizeRoles("CANDIDATE"),
+  asyncHandler(async (req, res) => {
+    const jobId = Number(req.params.jobId);
+
+    if (isNaN(jobId)) {
+      return res.status(400).json({ message: "Invalid job ID" });
+    }
+
+    const job = await prisma.job.findUnique({
+      where: { id: jobId },
+    });
+
+    if (!job) {
+      return res.status(404).json({ message: "Job not found" });
+    }
+
+    try {
+      const application = await prisma.application.create({
+        data: {
+          jobId,
+          candidateId: req.user.id,
+        },
+      });
+
+      res.status(201).json({
+        message: "Applied successfully",
+        application,
+      });
+    } catch (error) {
+      if (error.code === "P2002") {
+        return res
+          .status(409)
+          .json({ message: "You already applied to this job" });
+      }
+      throw error;
+    }
+  })
+);
+
+/* =========================
+   Health & Error Handling
+========================= */
+app.get("/api/health", (req, res) => {
+  res.json({ status: "Backend running" });
 });
 
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ message: "Internal server error" });
+});
 
-
+/* =========================
+   Server
+========================= */
 const PORT = 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
