@@ -3,6 +3,9 @@ const cors = require("cors");
 const bcrypt = require("bcrypt");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
+const { PrismaClient } = require("@prisma/client");
+const prisma = new PrismaClient();
+
 
 
 const app = express();
@@ -11,20 +14,22 @@ app.use(cors());
 app.use(express.json());
 
 // TEMPORARY user storage (will move to DB later)
-const users = [];
 
 // SIGNUP ROUTE
 app.post("/api/signup", async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    // 1. Basic validation
+    // 1. Validation
     if (!name || !email || !password || !role) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // 2. Check if user already exists
-    const existingUser = users.find((u) => u.email === email);
+    // 2. Check existing user
+    const existingUser = await prisma.user.findUnique({
+      where: { email },
+    });
+
     if (existingUser) {
       return res.status(409).json({ message: "User already exists" });
     }
@@ -32,33 +37,32 @@ app.post("/api/signup", async (req, res) => {
     // 3. Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 4. Create user object
-    const newUser = {
-      id: users.length + 1,
-      name,
-      email,
-      password: hashedPassword,
-      role,
-      createdAt: new Date(),
-    };
+    // 4. Create user
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+        role,
+      },
+    });
 
-    // 5. Store user
-    users.push(newUser);
-
-    // 6. Respond (NEVER send password)
+    // 5. Respond (never send password)
     res.status(201).json({
       message: "User registered successfully",
       user: {
-        id: newUser.id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
       },
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -153,13 +157,16 @@ app.post("/api/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Validate input
+    // 1. Validate
     if (!email || !password) {
       return res.status(400).json({ message: "Email and password required" });
     }
 
     // 2. Find user
-    const user = users.find((u) => u.email === email);
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
@@ -170,32 +177,30 @@ app.post("/api/login", async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 4. Login success (NO TOKEN YET)
     // 4. Create JWT
-const token = jwt.sign(
-  {
-    id: user.id,
-    role: user.role,
-  },
-  process.env.JWT_SECRET,
-  { expiresIn: "1h" }
-);
+    const token = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
 
-// 5. Send token
-res.json({
-  message: "Login successful",
-  token,
-  user: {
-    id: user.id,
-    name: user.name,
-    email: user.email,
-    role: user.role,
-  },
-});
+    // 5. Respond
+    res.json({
+      message: "Login successful",
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 
 const PORT = 5000;
