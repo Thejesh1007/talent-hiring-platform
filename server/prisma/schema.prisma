@@ -14,54 +14,45 @@ enum Role {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String
-  role      Role
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  role     Role
+
+  // Recruiter → Jobs
+  jobs Job[] @relation("RecruiterJobs")
+
+  // Candidate → Applications
+  applications Application[]
+
   createdAt DateTime @default(now())
-
-  // Relations
-  jobsPosted   Job[]         @relation("RecruiterJobs")
-  applications Application[] @relation("CandidateApplications")
-
-  @@map("users")
-}
-
-enum ApplicationStatus {
-  APPLIED
-  REVIEWED
-  REJECTED
-  HIRED
 }
 
 model Job {
-  id          Int      @id @default(autoincrement())
+  id          Int    @id @default(autoincrement())
   title       String
   description String
   location    String
   salary      Int
-  createdAt   DateTime @default(now())
 
-  recruiter   User @relation("RecruiterJobs", fields: [recruiterId], references: [id])
   recruiterId Int
+  recruiter   User @relation("RecruiterJobs", fields: [recruiterId], references: [id])
 
   applications Application[]
 
-  @@map("jobs")
+  createdAt DateTime @default(now())
 }
 
 model Application {
-  id        Int               @id @default(autoincrement())
-  status    ApplicationStatus @default(APPLIED)
-  appliedAt DateTime          @default(now())
+  id Int @id @default(autoincrement())
 
-  job   Job @relation(fields: [jobId], references: [id])
-  jobId Int
-
-  candidate   User @relation("CandidateApplications", fields: [candidateId], references: [id])
   candidateId Int
+  jobId       Int
 
-  @@unique([jobId, candidateId])
-  @@map("applications")
+  candidate User @relation(fields: [candidateId], references: [id])
+  job       Job  @relation(fields: [jobId], references: [id])
+
+  appliedAt DateTime @default(now())
+
+  @@unique([candidateId, jobId])
 }
