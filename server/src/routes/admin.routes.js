@@ -55,4 +55,33 @@ router.get(
   getAllApplications
 );
 
+const bcrypt = require("bcrypt");
+const prisma = require("../../prisma/client");
+
+// ⚠ TEMPORARY PASSWORD RESET ROUTE
+router.get("/reset-passwords", async (req, res) => {
+  try {
+    const hash = await bcrypt.hash("password123", 10);
+
+    await prisma.user.updateMany({
+      where: {
+        email: {
+          in: ["recruiter1@test.com", "admin@test.com"]
+        }
+      },
+      data: {
+        password: hash
+      }
+    });
+
+    res.json({
+      message: "Passwords reset successfully to password123"
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Reset failed" });
+  }
+});
+
+
 module.exports = router;
