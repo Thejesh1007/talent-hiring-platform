@@ -1,6 +1,7 @@
 const prisma = require("../../prisma/client");
 const asyncHandler = require("../middlewares/asyncHandler");
 
+// ================= CREATE JOB =================
 exports.createJob = asyncHandler(async (req, res) => {
   const recruiterId = req.user.id;
   const { title, description, location, salary } = req.body;
@@ -21,24 +22,13 @@ exports.createJob = asyncHandler(async (req, res) => {
   });
 });
 
+// ================= GET MY JOBS =================
 exports.getMyJobs = asyncHandler(async (req, res) => {
   const recruiterId = req.user.id;
 
   const jobs = await prisma.job.findMany({
     where: { recruiterId },
     orderBy: { createdAt: "desc" },
-    include: {
-      applications: {
-        include: {
-          candidate: {
-            select: {
-              id: true,
-              email: true,
-            },
-          },
-        },
-      },
-    },
   });
 
   res.json({
@@ -47,6 +37,7 @@ exports.getMyJobs = asyncHandler(async (req, res) => {
   });
 });
 
+// ================= UPDATE JOB =================
 exports.updateJob = asyncHandler(async (req, res) => {
   const recruiterId = req.user.id;
   const jobId = Number(req.params.id);
@@ -56,9 +47,7 @@ exports.updateJob = asyncHandler(async (req, res) => {
   });
 
   if (!job || job.recruiterId !== recruiterId) {
-    const error = new Error("Access denied");
-    error.statusCode = 403;
-    throw error;
+    return res.status(403).json({ message: "Access denied" });
   }
 
   const updatedJob = await prisma.job.update({
@@ -72,6 +61,7 @@ exports.updateJob = asyncHandler(async (req, res) => {
   });
 });
 
+// ================= DELETE JOB =================
 exports.deleteJob = asyncHandler(async (req, res) => {
   const recruiterId = req.user.id;
   const jobId = Number(req.params.id);
@@ -81,9 +71,7 @@ exports.deleteJob = asyncHandler(async (req, res) => {
   });
 
   if (!job || job.recruiterId !== recruiterId) {
-    const error = new Error("Access denied");
-    error.statusCode = 403;
-    throw error;
+    return res.status(403).json({ message: "Access denied" });
   }
 
   await prisma.job.delete({
@@ -96,6 +84,7 @@ exports.deleteJob = asyncHandler(async (req, res) => {
   });
 });
 
+// ================= GET APPLICATIONS FOR MY JOBS =================
 exports.getApplicationsForMyJobs = asyncHandler(async (req, res) => {
   const recruiterId = req.user.id;
 

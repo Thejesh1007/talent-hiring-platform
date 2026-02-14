@@ -1,31 +1,24 @@
 const router = require("express").Router();
-const {
-  createJob,
-  getMyJobs,
-  updateJob,
-  deleteJob,
-} = require("../controllers/job.controller");
+const prisma = require("../../prisma/client");
 
 const {
   createJob,
   getMyJobs,
   updateJob,
   deleteJob,
-  getApplicationsForMyJobs,   // add this
+  getApplicationsForMyJobs,
 } = require("../controllers/job.controller");
-
 
 const authenticateToken = require("../middlewares/auth.middleware");
 const authorizeRoles = require("../middlewares/rbac.middleware");
-
 
 // ================= PUBLIC ROUTES =================
 
 // Get all jobs (public)
 router.get("/", async (req, res) => {
   try {
-    const jobs = await require("../../prisma/client").job.findMany({
-      orderBy: { createdAt: "desc" }
+    const jobs = await prisma.job.findMany({
+      orderBy: { createdAt: "desc" },
     });
 
     res.json(jobs);
@@ -35,10 +28,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-
-/**
- * ================= RECRUITER ROUTES =================
- */
+// ================= RECRUITER ROUTES =================
 
 // Create Job
 router.post(
@@ -56,6 +46,14 @@ router.get(
   getMyJobs
 );
 
+// Get Applications For My Jobs
+router.get(
+  "/my-applications",
+  authenticateToken,
+  authorizeRoles("RECRUITER"),
+  getApplicationsForMyJobs
+);
+
 // Update Job
 router.put(
   "/:id",
@@ -71,14 +69,5 @@ router.delete(
   authorizeRoles("RECRUITER"),
   deleteJob
 );
-
-
-router.get(
-  "/my-applications",
-  authenticateToken,
-  authorizeRoles("RECRUITER"),
-  getApplicationsForMyJobs
-);
-
 
 module.exports = router;
