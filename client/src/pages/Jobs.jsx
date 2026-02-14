@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/axios";
 import { useAuth } from "../context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Jobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -10,16 +11,14 @@ const Jobs = () => {
   const [successMsg, setSuccessMsg] = useState("");
 
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchJobs = async () => {
-      setLoading(true);
-      setErrorMsg("");
-
       try {
         const res = await api.get("/jobs");
         setJobs(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
+      } catch {
         setErrorMsg("Failed to load jobs.");
       } finally {
         setLoading(false);
@@ -30,6 +29,13 @@ const Jobs = () => {
   }, []);
 
   const applyJob = async (jobId) => {
+    if (!user) {
+      navigate("/login");
+      return;
+    }
+
+    if (user.role !== "CANDIDATE") return;
+
     setApplyingId(jobId);
     setErrorMsg("");
     setSuccessMsg("");
@@ -37,8 +43,10 @@ const Jobs = () => {
     try {
       await api.post(`/applications/${jobId}/apply`);
       setSuccessMsg("Application submitted successfully.");
-    } catch (error) {
-      setErrorMsg("Failed to apply for this job.");
+    } catch (err) {
+      setErrorMsg(
+        err.response?.data?.message || "Failed to apply for this job."
+      );
     } finally {
       setApplyingId(null);
     }
@@ -52,33 +60,20 @@ const Jobs = () => {
       </div>
 
       {loading && <div className="loading-text">Loading jobs...</div>}
-
       {errorMsg && <div className="error-message">{errorMsg}</div>}
       {successMsg && <div className="success-message">{successMsg}</div>}
-
-      {!loading && jobs.length === 0 && (
-        <div className="empty-state">
-          <p>No jobs available at the moment.</p>
-        </div>
-      )}
 
       <div className="card-grid">
         {jobs.map((job) => (
           <div key={job.id} className="job-card">
             <div className="job-title">{job.title}</div>
             <div className="job-meta">{job.description}</div>
-            <div className="job-meta">
-              <strong>Location:</strong> {job.location}
-            </div>
-            <div className="job-meta">
-              <strong>Salary:</strong> ₹{job.salary}
-            </div>
+            <div className="job-meta">📍 {job.location}</div>
+            <div className="job-meta">💰 ₹{job.salary}</div>
 
             {user?.role === "CANDIDATE" && (
               <button
-                className={`primary-btn ${
-                  applyingId === job.id ? "button-loading" : ""
-                }`}
+                className="primary-btn"
                 disabled={applyingId === job.id}
                 onClick={() => applyJob(job.id)}
               >

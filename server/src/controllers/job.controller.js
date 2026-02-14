@@ -24,15 +24,21 @@ exports.createJob = asyncHandler(async (req, res) => {
 exports.getMyJobs = asyncHandler(async (req, res) => {
   const recruiterId = req.user.id;
 
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
-
   const jobs = await prisma.job.findMany({
     where: { recruiterId },
-    skip,
-    take: limit,
     orderBy: { createdAt: "desc" },
+    include: {
+      applications: {
+        include: {
+          candidate: {
+            select: {
+              id: true,
+              email: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   res.json({
@@ -87,5 +93,39 @@ exports.deleteJob = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     message: "Job deleted successfully",
+  });
+});
+
+exports.getApplicationsForMyJobs = asyncHandler(async (req, res) => {
+  const recruiterId = req.user.id;
+
+  const applications = await prisma.application.findMany({
+    where: {
+      job: {
+        recruiterId: recruiterId,
+      },
+    },
+    include: {
+      candidate: {
+        select: {
+          id: true,
+          email: true,
+        },
+      },
+      job: {
+        select: {
+          id: true,
+          title: true,
+        },
+      },
+    },
+    orderBy: {
+      appliedAt: "desc",
+    },
+  });
+
+  res.json({
+    success: true,
+    data: applications,
   });
 });

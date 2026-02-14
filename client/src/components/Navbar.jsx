@@ -17,6 +17,11 @@ const Navbar = () => {
           <Link to="/recruiter">Dashboard</Link>
         )}
 
+        {user?.role === "ADMIN" && (
+  <Link to="/admin">Admin</Link>
+)}
+
+
         {user?.role === "CANDIDATE" && (
           <Link to="/candidate">My Applications</Link>
         )}

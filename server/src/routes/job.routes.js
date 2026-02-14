@@ -6,6 +6,15 @@ const {
   deleteJob,
 } = require("../controllers/job.controller");
 
+const {
+  createJob,
+  getMyJobs,
+  updateJob,
+  deleteJob,
+  getApplicationsForMyJobs,   // add this
+} = require("../controllers/job.controller");
+
+
 const authenticateToken = require("../middlewares/auth.middleware");
 const authorizeRoles = require("../middlewares/rbac.middleware");
 
@@ -62,5 +71,14 @@ router.delete(
   authorizeRoles("RECRUITER"),
   deleteJob
 );
+
+
+router.get(
+  "/my-applications",
+  authenticateToken,
+  authorizeRoles("RECRUITER"),
+  getApplicationsForMyJobs
+);
+
 
 module.exports = router;
