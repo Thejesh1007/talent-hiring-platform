@@ -63,3 +63,35 @@ exports.getApplicationsForRecruiter = asyncHandler(async (req, res) => {
     data: applications,
   });
 });
+
+/**
+ * Candidate views their own applications
+ */
+exports.getMyApplications = async (req, res) => {
+  try {
+    const candidateId = req.user.id;
+
+    const applications = await prisma.application.findMany({
+      where: { candidateId },
+      include: {
+        job: {
+          select: {
+            id: true,
+            title: true,
+            description: true,
+            location: true,
+            salary: true,
+          },
+        },
+      },
+      orderBy: {
+        appliedAt: "desc",
+      },
+    });
+
+    res.json(applications);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Failed to fetch applications" });
+  }
+};

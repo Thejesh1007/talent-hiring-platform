@@ -1,17 +1,17 @@
 const router = require("express").Router();
+
 const {
   applyToJob,
   getApplicationsForRecruiter,
+  getMyApplications,
 } = require("../controllers/application.controller");
 
 const authenticateToken = require("../middlewares/auth.middleware");
 const authorizeRoles = require("../middlewares/rbac.middleware");
 
 /**
- * ================= CANDIDATE =================
+ * Candidate applies to job
  */
-
-// Apply to a job
 router.post(
   "/:jobId/apply",
   authenticateToken,
@@ -20,10 +20,18 @@ router.post(
 );
 
 /**
- * ================= RECRUITER =================
+ * Candidate views own applications
  */
+router.get(
+  "/my",
+  authenticateToken,
+  authorizeRoles("CANDIDATE"),
+  getMyApplications
+);
 
-// View applications for my jobs
+/**
+ * Recruiter views applications for their jobs
+ */
 router.get(
   "/recruiter",
   authenticateToken,
