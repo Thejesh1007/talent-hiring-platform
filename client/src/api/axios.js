@@ -1,10 +1,10 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "https://talent-hiring-api.onrender.com/api",
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
-// Attach token automatically
+// Attach JWT token automatically
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
 

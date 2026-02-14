@@ -1,17 +1,21 @@
+/* ===============================
+   NAVBAR
+================================= */
+
 .navbar {
   height: 70px;
-  background: white;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 40px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  padding: 0 24px;
 }
 
 .nav-left {
   font-weight: 700;
   font-size: 20px;
-  color: #2563eb;
+  color: var(--accent);
 }
 
 .nav-links {
@@ -21,19 +25,21 @@
 }
 
 .nav-links a {
+  color: var(--text-secondary);
   font-weight: 500;
-  color: #334155;
+  transition: var(--transition);
 }
 
-.nav-links button {
-  padding: 8px 16px;
-  background: #ef4444;
-  color: white;
-  border-radius: 6px;
+.nav-links a:hover {
+  color: var(--text-primary);
 }
 
-.container {
-  max-width: 1100px;
-  margin: 40px auto;
-  padding: 0 20px;
+
+.role-badge {
+  padding: 6px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--text-secondary);
 }

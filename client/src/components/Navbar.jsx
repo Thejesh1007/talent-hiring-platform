@@ -6,13 +6,19 @@ const Navbar = () => {
 
   return (
     <div className="navbar">
-      <div className="nav-left">TalentHire</div>
+      <div className="nav-left">
+        <Link to="/">TalentHire</Link>
+      </div>
 
       <div className="nav-links">
         <Link to="/">Jobs</Link>
 
         {user?.role === "RECRUITER" && (
           <Link to="/recruiter">Dashboard</Link>
+        )}
+
+        {user?.role === "CANDIDATE" && (
+          <Link to="/candidate">My Applications</Link>
         )}
 
         {!user && (
@@ -23,7 +29,12 @@ const Navbar = () => {
         )}
 
         {user && (
-          <button onClick={logout}>Logout</button>
+          <>
+            <span className="role-badge">{user.role}</span>
+            <button className="danger-btn" onClick={logout}>
+              Logout
+            </button>
+          </>
         )}
       </div>
     </div>

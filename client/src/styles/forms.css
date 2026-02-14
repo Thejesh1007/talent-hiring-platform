@@ -1,10 +1,14 @@
+/* ===============================
+   FORM SYSTEM
+================================= */
+
 .form-container {
   max-width: 450px;
   margin: 80px auto;
-  background: white;
+  background: var(--bg-secondary);
   padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
 }
 
 .form-container h2 {
@@ -12,61 +16,23 @@
 }
 
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 16px;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
   width: 100%;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #cbd5e1;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
-.form-submit {
-  width: 100%;
-  padding: 12px;
-  background: #2563eb;
-  color: white;
-  border-radius: 6px;
-  margin-top: 10px;
-}
-
-
-.form-card {
-  background: white;
-  padding: 30px;
-  border-radius: 10px;
-  box-shadow: 0 8px 20px rgba(0,0,0,0.05);
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  max-width: 500px;
-}
-
-.secondary-btn {
-  background: #f3f4f6;
-  color: #111827;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.secondary-btn:hover {
-  background: #e5e7eb;
-}
-
-.danger-btn {
-  background: #ef4444;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.danger-btn:hover {
-  background: #dc2626;
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent);
 }

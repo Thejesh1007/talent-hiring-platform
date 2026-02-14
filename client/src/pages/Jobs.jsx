@@ -4,17 +4,25 @@ import { useAuth } from "../context/AuthContext";
 
 const Jobs = () => {
   const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [applyingId, setApplyingId] = useState(null);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
   const { user } = useAuth();
 
   useEffect(() => {
     const fetchJobs = async () => {
+      setLoading(true);
+      setErrorMsg("");
+
       try {
         const res = await api.get("/jobs");
-
-        // Backend returns array directly
         setJobs(Array.isArray(res.data) ? res.data : []);
       } catch (err) {
-        console.error("Error fetching jobs:", err);
+        setErrorMsg("Failed to load jobs.");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -22,41 +30,64 @@ const Jobs = () => {
   }, []);
 
   const applyJob = async (jobId) => {
+    setApplyingId(jobId);
+    setErrorMsg("");
+    setSuccessMsg("");
+
     try {
       await api.post(`/applications/${jobId}/apply`);
-      alert("Applied successfully!");
+      setSuccessMsg("Application submitted successfully.");
     } catch (error) {
-      alert("Failed to apply");
+      setErrorMsg("Failed to apply for this job.");
+    } finally {
+      setApplyingId(null);
     }
   };
 
   return (
-    <div>
-      <h1 style={{ marginBottom: "30px" }}>Available Jobs</h1>
+    <div className="page">
+      <div className="page-header">
+        <h1>Available Jobs</h1>
+        <p>Explore opportunities and apply to your next role.</p>
+      </div>
 
-      {jobs.length === 0 && <p>No jobs available.</p>}
+      {loading && <div className="loading-text">Loading jobs...</div>}
 
-      {jobs.map((job) => (
-        <div key={job.id} className="job-card">
-          <div className="job-title">{job.title}</div>
-          <div className="job-meta">{job.description}</div>
-          <div className="job-meta">
-            <strong>Location:</strong> {job.location}
-          </div>
-          <div className="job-meta">
-            <strong>Salary:</strong> ₹{job.salary}
-          </div>
+      {errorMsg && <div className="error-message">{errorMsg}</div>}
+      {successMsg && <div className="success-message">{successMsg}</div>}
 
-          {user?.role === "CANDIDATE" && (
-            <button
-              className="primary-btn"
-              onClick={() => applyJob(job.id)}
-            >
-              Apply
-            </button>
-          )}
+      {!loading && jobs.length === 0 && (
+        <div className="empty-state">
+          <p>No jobs available at the moment.</p>
         </div>
-      ))}
+      )}
+
+      <div className="card-grid">
+        {jobs.map((job) => (
+          <div key={job.id} className="job-card">
+            <div className="job-title">{job.title}</div>
+            <div className="job-meta">{job.description}</div>
+            <div className="job-meta">
+              <strong>Location:</strong> {job.location}
+            </div>
+            <div className="job-meta">
+              <strong>Salary:</strong> ₹{job.salary}
+            </div>
+
+            {user?.role === "CANDIDATE" && (
+              <button
+                className={`primary-btn ${
+                  applyingId === job.id ? "button-loading" : ""
+                }`}
+                disabled={applyingId === job.id}
+                onClick={() => applyJob(job.id)}
+              >
+                {applyingId === job.id ? "Applying..." : "Apply"}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };

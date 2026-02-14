@@ -1,31 +1,28 @@
+/* ===============================
+   CARD SYSTEM
+================================= */
+
 .job-card {
-  background: white;
-  border-radius: 12px;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-md);
   padding: 20px;
   margin-bottom: 20px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-  transition: 0.2s ease;
+  border: 1px solid var(--border);
+  transition: var(--transition);
 }
 
 .job-card:hover {
   transform: translateY(-3px);
+  border-color: var(--accent);
 }
 
 .job-title {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 600;
   margin-bottom: 10px;
 }
 
 .job-meta {
   margin: 6px 0;
-  color: #475569;
-}
-
-.primary-btn {
-  margin-top: 15px;
-  padding: 10px 16px;
-  background: #2563eb;
-  color: white;
-  border-radius: 6px;
+  color: var(--text-secondary);
 }
