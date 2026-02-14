@@ -9,9 +9,7 @@ const {
 const authenticateToken = require("../middlewares/auth.middleware");
 const authorizeRoles = require("../middlewares/rbac.middleware");
 
-/**
- * Candidate applies to job
- */
+// Apply
 router.post(
   "/:jobId/apply",
   authenticateToken,
@@ -19,9 +17,7 @@ router.post(
   applyToJob
 );
 
-/**
- * Candidate views own applications
- */
+// Candidate dashboard
 router.get(
   "/my",
   authenticateToken,
@@ -29,9 +25,7 @@ router.get(
   getMyApplications
 );
 
-/**
- * Recruiter views applications for their jobs
- */
+// Recruiter dashboard
 router.get(
   "/recruiter",
   authenticateToken,
