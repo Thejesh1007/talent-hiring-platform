@@ -7,8 +7,9 @@ const AdminDashboard = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
-  const fetchAllData = async () => {
+  const loadAllData = async () => {
     try {
       setLoading(true);
       setErrorMsg("");
@@ -19,7 +20,6 @@ const AdminDashboard = () => {
         api.get("/admin/applications"),
       ]);
 
-      // ✅ FIXED: backend returns raw arrays
       setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
       setJobs(Array.isArray(jobsRes.data) ? jobsRes.data : []);
       setApplications(Array.isArray(appsRes.data) ? appsRes.data : []);
@@ -32,19 +32,31 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    fetchAllData();
+    loadAllData();
   }, []);
 
   const deleteUser = async (id) => {
-    if (!window.confirm("Delete this user?")) return;
-    await api.delete(`/admin/users/${id}`);
-    fetchAllData();
+    if (!window.confirm("Delete this user? All their data will be removed.")) return;
+    try {
+      await api.delete(`/admin/users/${id}`);
+      setSuccessMsg("User deleted successfully.");
+      setErrorMsg("");
+      loadAllData();
+    } catch (err) {
+      setErrorMsg("Failed to delete user. They may have active jobs or applications.");
+    }
   };
 
   const deleteJob = async (id) => {
-    if (!window.confirm("Delete this job?")) return;
-    await api.delete(`/admin/jobs/${id}`);
-    fetchAllData();
+    if (!window.confirm("Delete this job? All applications for it will also be removed.")) return;
+    try {
+      await api.delete(`/admin/jobs/${id}`);
+      setSuccessMsg("Job deleted successfully.");
+      setErrorMsg("");
+      loadAllData();
+    } catch (err) {
+      setErrorMsg("Failed to delete job.");
+    }
   };
 
   return (
@@ -56,6 +68,7 @@ const AdminDashboard = () => {
 
       {loading && <div className="loading-text">Loading data...</div>}
       {errorMsg && <div className="error-message">{errorMsg}</div>}
+      {successMsg && <div className="success-message">{successMsg}</div>}
 
       {!loading && (
         <>
@@ -93,14 +106,9 @@ const AdminDashboard = () => {
                     <tr key={user.id}>
                       <td>{user.email}</td>
                       <td>{user.role}</td>
+                      <td>{new Date(user.createdAt).toLocaleDateString()}</td>
                       <td>
-                        {new Date(user.createdAt).toLocaleDateString()}
-                      </td>
-                      <td>
-                        <button
-                          className="danger-btn"
-                          onClick={() => deleteUser(user.id)}
-                        >
+                        <button className="danger-btn" onClick={() => deleteUser(user.id)}>
                           Delete
                         </button>
                       </td>
@@ -133,10 +141,7 @@ const AdminDashboard = () => {
                       <td>{job.location}</td>
                       <td>₹{job.salary}</td>
                       <td>
-                        <button
-                          className="danger-btn"
-                          onClick={() => deleteJob(job.id)}
-                        >
+                        <button className="danger-btn" onClick={() => deleteJob(job.id)}>
                           Delete
                         </button>
                       </td>
@@ -164,9 +169,7 @@ const AdminDashboard = () => {
                     <tr key={app.id}>
                       <td>{app.candidate?.email}</td>
                       <td>{app.job?.title}</td>
-                      <td>
-                        {new Date(app.appliedAt).toLocaleDateString()}
-                      </td>
+                      <td>{new Date(app.appliedAt).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>

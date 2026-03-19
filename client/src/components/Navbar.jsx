@@ -11,16 +11,15 @@ const Navbar = () => {
       </div>
 
       <div className="nav-links">
-        <Link to="/">Jobs</Link>
+        <Link to="/jobs">Jobs</Link>
 
         {user?.role === "RECRUITER" && (
           <Link to="/recruiter">Dashboard</Link>
         )}
 
         {user?.role === "ADMIN" && (
-  <Link to="/admin">Admin</Link>
-)}
-
+          <Link to="/admin">Dashboard</Link>
+        )}
 
         {user?.role === "CANDIDATE" && (
           <Link to="/candidate">My Applications</Link>

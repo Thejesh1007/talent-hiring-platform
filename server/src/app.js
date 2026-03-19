@@ -22,7 +22,18 @@ app.use(
   })
 );
 
-app.use(cors());
+// CORS — restrict to frontend URL in production
+const allowedOrigins = process.env.FRONTEND_URL
+  ? [process.env.FRONTEND_URL]
+  : ["http://localhost:5173"];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 // Routes
@@ -33,10 +44,7 @@ app.use("/api/admin", adminRoutes);
 
 // Health Check
 app.get("/api/health", (req, res) => {
-  res.json({
-    success: true,
-    message: "Backend is running",
-  });
+  res.json({ success: true, message: "Backend is running" });
 });
 
 // Global Error Handler
